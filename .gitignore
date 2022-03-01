@@ -1,0 +1,12 @@
+venv
+dist
+*.egg-info
+*.pyc
+build
+.coverage
+.tox
+docs/_build
+*.backup
+.python-version
+old
+*.ipynb_checkpoints
