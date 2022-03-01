@@ -1,5 +1,15 @@
 # Statsplot
 
+A package that allows you easily to calculate and plot statistics.
+
+ Seaborn                   |  Statsplot
+:-------------------------:|:-------------------------:
+![boxplot seaborn](../docs/images/nested_seaborn.png) |  ![boxplot statsplot](../docs/images/nested_statsplot.png)
+
+
+
+
+
 > 
 <!-- 
 [![Latest Version on PyPI](https://img.shields.io/pypi/v/statsplot.svg)](https://pypi.python.org/pypi/statsplot/)

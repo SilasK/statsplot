@@ -14,9 +14,12 @@ old
 *__pycache__
 .vscode
 
+.DS_Store
+
 # temporary
 
-docs
+docs/*
+!docs/images
 tests
 
 .travis.yml
