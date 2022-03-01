@@ -10,3 +10,16 @@ docs/_build
 .python-version
 old
 *.ipynb_checkpoints
+
+*__pycache__
+.vscode
+
+# temporary
+
+docs
+tests
+
+.travis.yml
+tox.ini
+Makefile
+

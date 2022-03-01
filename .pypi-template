@@ -1,0 +1,18 @@
+a_description_for_the_package: A package for most important plot for (biological)-sciences
+classifiers: []
+console_scripts: []
+first_year_of_publication: ''
+github_account: silask
+github_repo_name: statsplot
+keywords_describing_the_package: plotting
+license: MIT
+package_module_name: statsplot
+package_name: statsplot
+package_tagline: ''
+package_title: Statsplot
+requires: []
+scripts: []
+your_author_name: Silas Kieser
+your_email_address: silas.kieser@gmail.com
+your_full_name: Silas Kieser
+your_name: Silas Kieser
