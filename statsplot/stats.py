@@ -1,16 +1,22 @@
 import pandas as pd
 import numpy as np
 from scipy import stats
+from xarray import corr
 
 
-def correct_pvalues_for_multiple_testing(pvalues, correction_type="Benjamini-Hochberg"):
+def correct_pvalues_for_multiple_testing(p_values, correction_type="Benjamini-Hochberg"):
     """
     correction_type: one of "Bonferroni", "Bonferroni-Holm", "Benjamini-Hochberg"
     consistent with R - print correct_pvalues_for_multiple_testing([0.0, 0.01, 0.029, 0.03, 0.031, 0.05, 0.069, 0.07, 0.071, 0.09, 0.1])
     """
-    from numpy import array, empty
+    from numpy import array, empty, isnan,where
 
-    pvalues = array(pvalues)
+    # remove na values convert to array, store indexes of non NA
+    p_values_with_nan = array(p_values,dtype=float)
+
+    not_na_positions= where(~ isnan(p_values_with_nan))[0]
+
+    pvalues = p_values_with_nan[ not_na_positions]
 
     # sort p vlaues and prepare unsort index
     sort_index = np.argsort(pvalues)
@@ -45,7 +51,18 @@ def correct_pvalues_for_multiple_testing(pvalues, correction_type="Benjamini-Hoc
             pvalue, index = vals
             new_pvalues[index] = new_values[i]
 
-    return new_pvalues[unsort_index]
+    new_pvalues = new_pvalues[unsort_index]
+
+    # add NAn if present
+
+    if len(not_na_positions)< len(p_values_with_nan):
+        print(f"{len(p_values_with_nan) - len(not_na_positions)} p values are NA, I don't take them into account")
+
+
+    corrected_p_values_wiht_na = np.empty_like(p_values_with_nan) * np.nan
+    corrected_p_values_wiht_na[ not_na_positions] = new_pvalues
+
+    return corrected_p_values_wiht_na
 
 
 def __stats_test_all_on_once(values1, values2, test, **test_kws):
@@ -62,6 +79,11 @@ def __stats_test_per_value(values1, values2, test, **test_kws):
 
     for variable in values1.columns:
         try:
+
+            if np.isnan(values1[variable]).any() or np.isnan(values2[variable]).any():
+
+                raise ValueError("Some values are Nan")
+
             Pairwise_comp.loc[variable] = test(
                 values1[variable], values2[variable], **test_kws
             )
@@ -150,15 +172,17 @@ def two_group_test(
         Pairwise_comp["median_diff"] = values2.median() - values1.median()
 
         if correct_for_multiple_testing:
-            Pairwise_comp["pBH"] = (
-                Pairwise_comp[["Pvalue"]]
-                .dropna()
+
+            # what to do when some P values are Nan
+
+            Pairwise_comp["pBH"] = Pairwise_comp[["Pvalue"]]\
                 .apply(
                     correct_pvalues_for_multiple_testing,
                     axis=0,
                     correction_type="Benjamini-Hochberg",
                 )
-            )
+               
+            
 
         Results[group2 + "_vs_" + group1] = Pairwise_comp
 

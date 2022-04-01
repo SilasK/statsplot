@@ -1,4 +1,7 @@
+import imp
 import logging
+
+from matplotlib.pyplot import violinplot
 
 logger = logging.getLogger("statstable")
 
@@ -7,87 +10,12 @@ from numpy import unique
 import pandas as pd
 import matplotlib.pylab as plt
 
-from .stats import two_group_test, calculate_stats
+from .stats import two_group_test
 from .siglabels import plot_all_sig_labels
+from .plot import statsplot, vulcanoplot
 
 import seaborn as sns
 
-
-def statsplot(
-    variable,
-    test_variable,
-    order_test=None,
-    grouping_variable=None,
-    order_grouping=None,
-    box_params=None,
-    swarm_params=None,
-    labelkws=None,
-    stats_kws=None,
-    palette=None,
-    p_values=None,
-    test="ttest_ind",
-    ax=None,
-):
-
-    if ax is None:
-        ax = plt.subplot(111)
-
-    params = dict(y=variable, ax=ax)
-
-    if order_test is None:
-        order_test = unique(test_variable)
-
-    # use subgrouping
-    if grouping_variable is None:
-        params.update(dict(x=test_variable, order=order_test))
-    else:
-
-        if order_grouping is None:
-            order_grouping = unique(grouping_variable)
-
-        params.update(
-            dict(
-                x=grouping_variable,
-                order=order_grouping,
-                hue=test_variable,
-                hue_order=order_test,
-            )
-        )
-
-    if box_params is None:
-        box_params = {}
-    if swarm_params is None:
-        swarm_params = {}
-
-    sns.boxplot(palette=palette, **params, **box_params)
-
-    legend = ax.get_legend_handles_labels()
-
-    sns.swarmplot(**params, color="k", dodge=True, **swarm_params)
-
-    if grouping_variable is not None:
-        ax.legend(*legend, bbox_to_anchor=(1, 1))
-
-    # Statistics
-    if p_values is None:
-
-        if stats_kws is None:
-            stats_kws = dict()
-
-        p_values = calculate_stats(
-            variable,
-            test_variable,
-            grouping_variable=grouping_variable,
-            test=test,
-            **stats_kws,
-        ).Pvalue.iloc[0]
-
-    if labelkws is None:
-        labelkws = dict(deltay="auto")
-
-    plot_all_sig_labels(p_values, order_test, order_grouping, ax=ax, **labelkws)
-
-    return ax, p_values
 
 
 class StatsTable(AnnData):
@@ -227,61 +155,9 @@ class StatsTable(AnnData):
             results.columns = results.columns.swaplevel(0, 1)
             results.sort_index(axis=1, inplace=True)
 
-        self.stats = results
+        self.stats = results.astype(float)
 
-    def plot_old(
-        self,
-        variable,
-        distance_between_sig_labels="auto",
-        box_params=None,
-        swarm_params=None,
-        ax=None,
-        **labelkws,
-    ):
 
-        if ax is None:
-            ax = plt.subplot(111)
-
-        params = dict(y=self[:, variable].to_df()[variable], ax=ax)
-
-        if self.grouping_variable is None:
-            params.update(dict(x=self.test_variable, order=self.order_test))
-        else:
-            params.update(
-                dict(
-                    x=self.grouping_variable,
-                    order=self.order_grouping,
-                    hue=self.test_variable,
-                    hue_order=self.order_test,
-                )
-            )
-
-        if box_params is None:
-            box_params = {}
-        if swarm_params is None:
-            swarm_params = {}
-
-        sns.boxplot(palette=self.colors, **params, **box_params)
-
-        legend = ax.get_legend_handles_labels()
-
-        sns.swarmplot(**params, color="k", dodge=True, **swarm_params)
-        if self.grouping_variable is not None:
-            ax.legend(*legend, bbox_to_anchor=(1, 1))
-
-        ax.set_title(self.labels[variable])
-        ax.set_ylabel(self.data_unit)
-
-        if self.stats is not None:
-            P_values = self.stats.Pvalue.loc[variable].T
-            plot_all_sig_labels(
-                P_values,
-                self.order_test,
-                self.order_grouping,
-                deltay=distance_between_sig_labels,
-                ax=ax,
-                **labelkws,
-            )
 
     def plot(
         self,
@@ -314,3 +190,86 @@ class StatsTable(AnnData):
 
         ax.set_title(self.labels[variable])
         ax.set_ylabel(self.data_unit)
+
+    def __get_groups(self, subset = None):
+        "Check if given subset are in header of statstable"
+        "Otherwise return all in a row, if not defined return None"
+
+            # check if grouped
+        if self.grouping_variable is None:
+            return None
+        else:
+
+            all_groups = list(self.stats.columns.levels[-2])
+            if subset is None:
+
+                return all_groups
+            elif type(subset) == str:
+                return [subset]
+            else:
+                for g in subset:
+                    assert g in all_groups, f"{g} is not in the Groups"
+                
+                return list(subset)
+
+    def __get_comparisons(self, subset = None):
+        "Check if given subset are in comparisons of statstable"
+        "Otherwise return all in a row, if not defined return None"
+
+
+        all_comparisons = list(self.stats.columns.levels[-1])
+        if subset is None:
+
+            return all_comparisons
+        elif type(subset) == str:
+            return [subset]
+        else:
+            for g in subset:
+                assert g in all_comparisons, f"{g} is not in the Comparisons"
+            
+            return list(subset)
+
+    
+  
+
+
+    def vulcanoplot(self, comparisons = None, groups = None, corrected_pvalues= True, threshold_p= 0.05 , **kws):
+
+
+        effect_name= "median_diff"
+        groups = self.__get_groups(groups)
+     
+
+        comparisons = self.__get_comparisons(comparisons)
+
+
+        if corrected_pvalues:
+            p_value_name= 'pBH'
+        else:
+            p_value_name = "Pvalue"
+      
+        if groups is not None:
+
+            for g in groups:
+                for c in comparisons:
+
+                    
+                    vulcanoplot( p_values=self.stats[p_value_name][g][c], 
+                                      effect= self.stats[effect_name][g][c], 
+                                      threshold_p= threshold_p,
+                                      **kws
+                                     )
+                    ax= plt.gca()
+                    ax.set_title(g)
+        else:
+
+          
+            for c in comparisons:
+
+                vulcanoplot( p_values=self.stats[p_value_name][c], 
+                                    effect= self.stats[effect_name][c], 
+                                    threshold_p= threshold_p,
+                                    **kws
+                                    )
+
+
