@@ -237,10 +237,20 @@ class StatsTable(AnnData):
 
         if "log2FC" in self.stats.columns:
             effect_name= "log2FC"
+            y_label = "$\log_2FC$"
 
         else:
             effect_name= "median_diff"
+            y_label = "median difference"
             logger.info("Don't have log2FC in stats, using median_diff for vulcanoplot")
+
+        
+        def rename_vulcano_axis_labels():
+            ax= plt.gca()
+            ax.set_xlabel( y_label )
+            
+            if corrected_pvalues:
+                ax.set_xlabel( "$-\log(P_{BH})$" )
 
         groups = self.__get_groups(groups)
      
@@ -257,6 +267,9 @@ class StatsTable(AnnData):
             if threshold_p is None:
                 threshold_p= 0.05
       
+
+
+
         if groups is not None:
 
             for g in groups:
@@ -270,9 +283,8 @@ class StatsTable(AnnData):
                                      )
                     ax= plt.gca()
                     ax.set_title(g)
-                    ax.set_xlabel( effect_name )
-                    if corrected_pvalues:
-                        ax.set_xlabel( "$-\log(P_{BH})$" )
+                    rename_vulcano_axis_labels()
+
         else:
 
           
@@ -283,10 +295,7 @@ class StatsTable(AnnData):
                                     threshold_p= threshold_p,
                                     **kws
                                     )
-                ax= plt.gca()
-                ax.set_xlabel( effect_name )
-                
-                if corrected_pvalues:
-                    ax.set_xlabel( "$-\log(P_{BH})$" )
+                rename_vulcano_axis_labels()
+
 
 
