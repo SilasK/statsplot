@@ -233,10 +233,15 @@ class StatsTable(AnnData):
   
 
 
-    def vulcanoplot(self, comparisons = None, groups = None, corrected_pvalues= True, threshold_p= 0.05 , **kws):
+    def vulcanoplot(self, comparisons = None, groups = None, corrected_pvalues= True, threshold_p= None , **kws):
 
+        if "log2FC" in self.stats.columns:
+            effect_name= "log2FC"
 
-        effect_name= "median_diff"
+        else:
+            effect_name= "median_diff"
+            logger.info("Don't have log2FC in stats, using median_diff for vulcanoplot")
+
         groups = self.__get_groups(groups)
      
 
@@ -245,8 +250,12 @@ class StatsTable(AnnData):
 
         if corrected_pvalues:
             p_value_name= 'pBH'
+            if threshold_p is None:
+                threshold_p= 0.1
         else:
             p_value_name = "Pvalue"
+            if threshold_p is None:
+                threshold_p= 0.05
       
         if groups is not None:
 
