@@ -270,6 +270,9 @@ class StatsTable(AnnData):
                                      )
                     ax= plt.gca()
                     ax.set_title(g)
+                    ax.set_xlabel( effect_name )
+                    if corrected_pvalues:
+                        ax.set_xlabel( "$-\log(P_{BH})$" )
         else:
 
           
@@ -280,5 +283,10 @@ class StatsTable(AnnData):
                                     threshold_p= threshold_p,
                                     **kws
                                     )
+                ax= plt.gca()
+                ax.set_xlabel( effect_name )
+                
+                if corrected_pvalues:
+                    ax.set_xlabel( "$-\log(P_{BH})$" )
 
 

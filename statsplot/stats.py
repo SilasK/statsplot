@@ -198,8 +198,6 @@ def two_group_test(
 
         if correct_for_multiple_testing:
 
-            # what to do when some P values are Nan
-
             Pairwise_comp["pBH"] = Pairwise_comp[["Pvalue"]]\
                 .apply(
                     correct_pvalues_for_multiple_testing,
