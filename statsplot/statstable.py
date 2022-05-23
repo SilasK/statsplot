@@ -17,7 +17,6 @@ from .plot import statsplot, vulcanoplot
 import seaborn as sns
 
 
-
 class StatsTable(AnnData):
     def __init__(
         self,
@@ -95,6 +94,9 @@ class StatsTable(AnnData):
         else:
             raise IOError("label_variable must be None, a string, or a pandas series")
 
+        if not self.labels.is_unique:
+            logger.error("Your labels are not unique. You are in for some trouble.")
+
     def __repr__(self) -> str:
         annadata_str = super().__repr__()
         annadata_str += f"\n    test_variable: {self.test_variable.name} with groups {self.order_test}  "
@@ -157,8 +159,6 @@ class StatsTable(AnnData):
 
         self.stats = results.astype(float)
 
-
-
     def plot(
         self,
         variable,
@@ -191,11 +191,11 @@ class StatsTable(AnnData):
         ax.set_title(self.labels[variable])
         ax.set_ylabel(self.data_unit)
 
-    def __get_groups(self, subset = None):
+    def __get_groups(self, subset=None):
         "Check if given subset are in header of statstable"
         "Otherwise return all in a row, if not defined return None"
 
-            # check if grouped
+        # check if grouped
         if self.grouping_variable is None:
             return None
         else:
@@ -209,13 +209,12 @@ class StatsTable(AnnData):
             else:
                 for g in subset:
                     assert g in all_groups, f"{g} is not in the Groups"
-                
+
                 return list(subset)
 
-    def __get_comparisons(self, subset = None):
+    def __get_comparisons(self, subset=None):
         "Check if given subset are in comparisons of statstable"
         "Otherwise return all in a row, if not defined return None"
-
 
         all_comparisons = list(self.stats.columns.levels[-1])
         if subset is None:
@@ -226,76 +225,81 @@ class StatsTable(AnnData):
         else:
             for g in subset:
                 assert g in all_comparisons, f"{g} is not in the Comparisons"
-            
+
             return list(subset)
 
-    
-  
-
-
-    def vulcanoplot(self, comparisons = None, groups = None, corrected_pvalues= True, threshold_p= None , **kws):
+    def vulcanoplot(
+        self,
+        comparisons=None,
+        groups=None,
+        corrected_pvalues=True,
+        threshold_p=None,
+        hue=None,
+        **kws,
+    ):
 
         if "log2FC" in self.stats.columns:
-            effect_name= "log2FC"
+            effect_name = "log2FC"
             y_label = "$\log_2FC$"
 
         else:
-            effect_name= "median_diff"
+            effect_name = "median_diff"
             y_label = "median difference"
             logger.info("Don't have log2FC in stats, using median_diff for vulcanoplot")
 
-        
         def rename_vulcano_axis_labels():
-            ax= plt.gca()
-            ax.set_xlabel( y_label )
-            
+            ax = plt.gca()
+            ax.set_xlabel(y_label)
+
             if corrected_pvalues:
-                ax.set_xlabel( "$-\log(P_{BH})$" )
+                ax.set_ylabel("$-\log(P_{BH})$")
 
         groups = self.__get_groups(groups)
-     
 
         comparisons = self.__get_comparisons(comparisons)
 
+        axes = []
 
         if corrected_pvalues:
-            p_value_name= 'pBH'
+            p_value_name = "pBH"
             if threshold_p is None:
-                threshold_p= 0.1
+                threshold_p = 0.1
         else:
             p_value_name = "Pvalue"
             if threshold_p is None:
-                threshold_p= 0.05
-      
+                threshold_p = 0.05
 
+        if hue is not None and (type(hue) == str):
+            hue = self.var[hue]
 
+        # collect general arguments
+        kws["threshold_p"] = threshold_p
+        kws["hue"] = hue
+        kws["labels"] = self.labels
 
         if groups is not None:
 
             for g in groups:
                 for c in comparisons:
 
-                    
-                    vulcanoplot( p_values=self.stats[p_value_name][g][c], 
-                                      effect= self.stats[effect_name][g][c], 
-                                      threshold_p= threshold_p,
-                                      **kws
-                                     )
-                    ax= plt.gca()
+                    vulcanoplot(
+                        p_values=self.stats[p_value_name][g][c],
+                        effect=self.stats[effect_name][g][c],
+                        **kws,
+                    )
+                    ax = plt.gca()
                     ax.set_title(g)
                     rename_vulcano_axis_labels()
+                    axes.append(ax)
 
         else:
 
-          
             for c in comparisons:
 
-                vulcanoplot( p_values=self.stats[p_value_name][c], 
-                                    effect= self.stats[effect_name][c], 
-                                    threshold_p= threshold_p,
-                                    **kws
-                                    )
+                vulcanoplot(
+                    p_values=self.stats[p_value_name][c],
+                    effect=self.stats[effect_name][c],
+                    **kws,
+                )
                 rename_vulcano_axis_labels()
-
-
-
+                axes.append(plt.gca())

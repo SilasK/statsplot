@@ -1,51 +1,14 @@
-from sklearn.decomposition import PCA, SparsePCA
+from logging import getLogger
+
+logger = getLogger("__name__")
+
+from sklearn.decomposition import PCA
 import pandas as pd
 import numpy as np
 import matplotlib.pylab as plt
 import warnings
-
+from .plot import annotate_points, _def_label_alignment
 import seaborn as sns
-
-
-def label_points_(data, ax, max_labels=10):
-
-    assert data.shape[1] == 2, "Expect data n x 2"
-
-    sample_names = data.index
-
-    N_samples = len(sample_names)
-    if N_samples < max_labels:
-
-        for i in range(N_samples):
-            ax.annotate(
-                s=sample_names[i],
-                xy=(data.iloc[i, 0], data.iloc[i, 1]),
-                xytext=(0, 10),
-                textcoords="offset points",
-            )
-            
-def _def_label_alignment(x,y):
-
-    ha="center"
-
-    if abs(x)> abs(y):
-        if x>0:
-            ha="left"
-        else:
-            ha="right"
-
-    va="center"
-
-    if abs(y)> abs(x):
-        if y>0:
-            va="bottom"
-        else:
-            va="top"
-
-    return {'ha':ha,'va':va}
-
-
-
 
 
 from matplotlib.patches import Ellipse
@@ -54,7 +17,7 @@ import matplotlib.transforms as transforms
 from scipy.stats import chi2
 
 
-def confidence_ellipse(x, y, ax,ci=0.95, color='red',facecolor='none', **kwargs):
+def confidence_ellipse(x, y, ax, ci=0.95, color="red", facecolor="none", **kwargs):
     """
     Create a plot of the covariance confidence ellipse of *x* and *y*.
 
@@ -78,7 +41,7 @@ def confidence_ellipse(x, y, ax,ci=0.95, color='red',facecolor='none', **kwargs)
     """
 
     if ax is None:
-        ax=plt.gca()
+        ax = plt.gca()
 
     if len(x) < 4:
         raise Exception("need more than 3 data points")
@@ -87,16 +50,21 @@ def confidence_ellipse(x, y, ax,ci=0.95, color='red',facecolor='none', **kwargs)
         raise ValueError("x and y must be the same size")
 
     cov = np.cov(x, y)
-    pearson = cov[0, 1]/np.sqrt(cov[0, 0] * cov[1, 1])
+    pearson = cov[0, 1] / np.sqrt(cov[0, 0] * cov[1, 1])
     # Using a special case to obtain the eigenvalues of this
     # two-dimensionl dataset.
     ell_radius_x = np.sqrt(1 + pearson)
     ell_radius_y = np.sqrt(1 - pearson)
-    ellipse = Ellipse((0, 0), width=ell_radius_x * 2, height=ell_radius_y * 2,
-                      facecolor=facecolor,edgecolor=color ,**kwargs)
+    ellipse = Ellipse(
+        (0, 0),
+        width=ell_radius_x * 2,
+        height=ell_radius_y * 2,
+        facecolor=facecolor,
+        edgecolor=color,
+        **kwargs,
+    )
 
-
-    s= chi2.ppf(ci,2)
+    s = chi2.ppf(ci, 2)
 
     # Calculating the stdandard deviation of x from
     # the squareroot of the variance and multiplying
@@ -108,22 +76,61 @@ def confidence_ellipse(x, y, ax,ci=0.95, color='red',facecolor='none', **kwargs)
     scale_y = np.sqrt(cov[1, 1] * s)
     mean_y = np.mean(y)
 
-    transf = transforms.Affine2D() \
-        .rotate_deg(45) \
-        .scale(scale_x, scale_y) \
+    transf = (
+        transforms.Affine2D()
+        .rotate_deg(45)
+        .scale(scale_x, scale_y)
         .translate(mean_x, mean_y)
+    )
 
     ellipse.set_transform(transf + ax.transData)
     return ax.add_patch(ellipse)
 
 
+def plot_confidence_ellipses(
+    x,
+    y,
+    groups,
+    order=None,
+    colors=None,
+    confidence_interval=0.95,
+    facecolor="none",
+    ax=None,
+    **kwargs,
+):
 
+    x = np.array(x)
+    y = np.array(y)
 
+    if ax is None:
+        ax = plt.subplot(111)
+
+    if order is None:
+        order = np.unique(groups)
+
+    if colors is None:
+        colors = sns.color_palette(n_colors=len(order))
+
+    if kwargs is None:
+        kwargs = {}
+
+    for n, g in enumerate(order):
+        confidence_ellipse(
+            x[groups == g],
+            y=y[groups == g],
+            ax=ax,
+            color=colors[n],
+            ci=confidence_interval,
+            facecolor=facecolor,
+            **kwargs,
+        )
+
+    return ax
 
 
 class DimRed:
     def __init__(
-        self, data, decomposition=PCA, transformation=None, n_components=None, **kargs
+        self, data, method=PCA, transformation=None, n_components=None, **kargs
     ):
 
         if n_components is None:
@@ -134,7 +141,7 @@ class DimRed:
                 "you don't need to reduce dimensionality or your dataset is transposed."
             )
 
-        self.decomposition = decomposition(n_components=n_components, **kargs)
+        self.decomposition = method(n_components=n_components, **kargs)
 
         self.rawdata = data
 
@@ -200,9 +207,26 @@ class DimRed:
         explained_variance_ratio = self.decomposition.explained_variance_ratio_
         n = min(n_components, len(explained_variance_ratio))
 
-        return plt.bar(np.arange(n), explained_variance_ratio[:n], **kwargs)
+        plt.bar(np.arange(n), explained_variance_ratio[:n], **kwargs)
 
-    def plot_Components_2D(self, components=(1, 2), ax=None,plot_ellipse=False,hue=None, **scatter_args):
+        ax = plt.gca()
+        ax.set_xlabel("Principal Component")
+        ax.set_ylabel("Explained Variance Ratio")
+
+        return ax
+
+    def plot_components(
+        self,
+        components=(1, 2),
+        ax=None,
+        groups=None,
+        plot_ellipse=False,
+        label_points=False,
+        confidence_interval=0.95,
+        order_groups=None,
+        colors=None,
+        **scatter_args,
+    ):
 
         components = list(components)
         assert len(components) == 2, "expect two components"
@@ -210,47 +234,58 @@ class DimRed:
         if ax is None:
             ax = plt.subplot(111)
 
-        x,y = self.transformed_data[components[0]], self.transformed_data[components[1]]
+        if (groups is not None) and (order_groups is None):
+            order_groups = np.unique(groups)
+
+        x, y = (
+            self.transformed_data[components[0]],
+            self.transformed_data[components[1]],
+        )
+
+        overwritten_seaborn_kargs = {
+            "hue": "groups",
+            "hue_order": "order_groups",
+            "palette": "colros",
+        }
+
+        for k in overwritten_seaborn_kargs:
+            if k in scatter_args:
+                raise ValueError(
+                    f"You provided `{k}` as keyword. However `{k}` is overwritten by the `{overwritten_seaborn_kargs[k]}` argument."
+                )
 
         sns.scatterplot(
-            x=x,y=y,
+            x=x,
+            y=y,
             ax=ax,
-            hue=hue,
+            hue=groups,
+            hue_order=order_groups,
+            palette=colors,
             **scatter_args,
         )
 
         ax.axis("equal")
         self.set_axes_labels_(ax, components)
-        label_points_(self.transformed_data[components], ax)
-            
-        # if plot_ellipse:
+        if label_points:
+            annotate_points(data=self.transformed_data[components], ax=ax)
 
-        #     if hue is None:
+        if plot_ellipse:
+            if groups is None:
+                raise Exception("`groups`` is required for plotting confidence ellipse")
 
-        #         raise Exception("hue is required for plotting ellipse")
-
-
-
-        #     if "hue_order" not in scatter_args:
-        #         scatter_args["hue_order"] = np.unique(hue)
-            
-        #     if "palette" not in scatter_args:
-        #         scatter_args["palette"] = sns.color_palette()
-            
-        #     palette = colors
-        #     #palette= sns.color_palette()
-
-        #     for n,group in enumerate(hue_order):
-        #         confidence_ellipse(x.loc[hue==group],y=y.loc[hue==group],ax=ax,color= palette[n])
-                
-    
-    
-
-
+            plot_confidence_ellipses(
+                x,
+                y,
+                groups,
+                order=order_groups,
+                colors=colors,
+                confidence_interval=confidence_interval,
+                ax=ax,
+            )
 
         return ax
 
-    def plot_Loadings_2D(self, components=(1, 2), ax=None, **scatter_args):
+    def plot_loadings(self, components=(1, 2), ax=None, **scatter_args):
 
         if ax is None:
             ax = plt.subplot(111)
@@ -269,11 +304,11 @@ class DimRed:
 
         return ax
 
-    def _detect_which_arrows_to_vizualize(self,loadings, n_arrows=None):
+    def _detect_which_arrows_to_vizualize(self, loadings, n_arrows=None):
 
         assert loadings.shape[0] == 2
 
-        radius = np.sqrt(sum(loadings.values ** 2))
+        radius = np.sqrt(sum(loadings.values**2))
 
         radius = pd.Series(radius, self.components.columns).sort_values(ascending=False)
 
@@ -309,16 +344,11 @@ class DimRed:
 
         return list(radius.index[:n_arrows])
 
-    
-
-                
-    
-    
-    def biplot(
+    def plot_biplot(
         self, components=[1, 2], n_arrows=None, scale_factor=None, labels=None, **kws
     ):
 
-        ax = self.plot_Components_2D(**kws)
+        ax = self.plot_components(**kws)
 
         if scale_factor is None:
             scale_factor = max(
@@ -332,6 +362,7 @@ class DimRed:
             loadings, n_arrows=n_arrows
         )
 
+        Texts = []
         for c in interesting_components:
 
             x, y = loadings[c] * scale_factor
@@ -343,7 +374,23 @@ class DimRed:
             else:
                 label = labels[c]
 
-            ax.text(x * 1.3, y * 1.3, label, color="k", **_def_label_alignment(x,y))
+            Texts.append(
+                ax.text(
+                    x * 1.3, y * 1.3, label, color="k", **_def_label_alignment(x, y)
+                )
+            )
+
+        try:
+            from adjustText import adjust_text
+
+            adjust_text(Texts, x=[0], y=[0], ax=ax)
+
+        except ImportError:
+            logger.warning(
+                "Want to optimize label placement but adjustText is not installed."
+                "This will inevitabely lead to overlapping labels."
+                "You need to install it: `conda install -c conda-forge adjusttext` "
+            )
 
         return ax
 
@@ -384,7 +431,6 @@ try:
         )
 
         return chart
-
 
 except ImportError:
     warnings.warn("Altair is not installed. Interactive plots are not available")

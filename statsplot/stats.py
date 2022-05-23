@@ -4,22 +4,25 @@ from scipy import stats
 from xarray import corr
 
 import logging
+
 logger = logging.getLogger("statsplot")
 
 
-def correct_pvalues_for_multiple_testing(p_values, correction_type="Benjamini-Hochberg"):
+def correct_pvalues_for_multiple_testing(
+    p_values, correction_type="Benjamini-Hochberg"
+):
     """
     correction_type: one of "Bonferroni", "Bonferroni-Holm", "Benjamini-Hochberg"
     consistent with R - print correct_pvalues_for_multiple_testing([0.0, 0.01, 0.029, 0.03, 0.031, 0.05, 0.069, 0.07, 0.071, 0.09, 0.1])
     """
-    from numpy import array, empty, isnan,where
+    from numpy import array, empty, isnan, where
 
     # remove na values convert to array, store indexes of non NA
-    p_values_with_nan = array(p_values,dtype=float)
+    p_values_with_nan = array(p_values, dtype=float)
 
-    not_na_positions= where(~ isnan(p_values_with_nan))[0]
+    not_na_positions = where(~isnan(p_values_with_nan))[0]
 
-    pvalues = p_values_with_nan[ not_na_positions]
+    pvalues = p_values_with_nan[not_na_positions]
 
     # sort p vlaues and prepare unsort index
     sort_index = np.argsort(pvalues)
@@ -58,12 +61,13 @@ def correct_pvalues_for_multiple_testing(p_values, correction_type="Benjamini-Ho
 
     # add NAn if present
 
-    if len(not_na_positions)< len(p_values_with_nan):
-        logger.warn(f"{len(p_values_with_nan) - len(not_na_positions)} p values are NA, I don't take them into account")
-
+    if len(not_na_positions) < len(p_values_with_nan):
+        logger.warn(
+            f"{len(p_values_with_nan) - len(not_na_positions)} p values are NA, I don't take them into account"
+        )
 
     corrected_p_values_wiht_na = np.empty_like(p_values_with_nan) * np.nan
-    corrected_p_values_wiht_na[ not_na_positions] = new_pvalues
+    corrected_p_values_wiht_na[not_na_positions] = new_pvalues
 
     return corrected_p_values_wiht_na
 
@@ -142,23 +146,19 @@ def two_group_test(
 
     data = pd.DataFrame(data)
 
-
-
     Groups = np.unique(test_variable)
 
     # min value for logFC caluclation
     min_value = data.min().min()
 
-    if min_value ==0:
+    if min_value == 0:
 
-        log_delta = data.values[data>0].min() * 0.65
-    elif min_value >0:
-        log_delta =0
+        log_delta = data.values[data > 0].min() * 0.65
+    elif min_value > 0:
+        log_delta = 0
     else:
 
         logger.info("lowest value is negative I don't calculate log2 Fold change")
-
-
 
     if ref_group is not None:
         assert ref_group in Groups, "ref_group: {} is not in the groups: {}".format(
@@ -190,22 +190,18 @@ def two_group_test(
 
         Pairwise_comp["median_diff"] = values2.median() - values1.median()
 
-        
-        if min_value >=0:
-            Pairwise_comp["log2FC"] = np.log2(values2.mean() + log_delta) - np.log2(values1.mean() + log_delta )
-        
-
+        if min_value >= 0:
+            Pairwise_comp["log2FC"] = np.log2(values2.mean() + log_delta) - np.log2(
+                values1.mean() + log_delta
+            )
 
         if correct_for_multiple_testing:
 
-            Pairwise_comp["pBH"] = Pairwise_comp[["Pvalue"]]\
-                .apply(
-                    correct_pvalues_for_multiple_testing,
-                    axis=0,
-                    correction_type="Benjamini-Hochberg",
-                )
-               
-            
+            Pairwise_comp["pBH"] = Pairwise_comp[["Pvalue"]].apply(
+                correct_pvalues_for_multiple_testing,
+                axis=0,
+                correction_type="Benjamini-Hochberg",
+            )
 
         Results[group2 + "_vs_" + group1] = Pairwise_comp
 
