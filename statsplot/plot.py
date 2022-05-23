@@ -68,6 +68,9 @@ def annotate_points(
             labels = data.index
 
     N_labels = len(labels)
+    assert len(x) == N_labels, "x and labels should have the same length"
+    assert len(y) == N_labels, "y and labels should have the same length"
+
     if N_labels > max_labels:
 
         logger.error(
@@ -140,8 +143,9 @@ def vulcanoplot(
 
         label_data = pd.concat([effect, logPvalues], axis=1)
         label_data.columns = ["effect", "logP"]
+
         if labels is not None:
-            label_data.index = labels
+            label_data["Labels"] = labels
 
         if label_points == "auto":
             # select only significant points
@@ -164,9 +168,13 @@ def vulcanoplot(
 
             label_data = label_data.sort_values("radius", ascending=False)
 
-            label_data = label_data.iloc[:max_labels, :2]
+            label_data = label_data.iloc[:max_labels]
 
-            annotate_points(data=label_data, max_labels=max_labels)
+            annotate_points(
+                data=label_data.iloc[:, :2],
+                labels=label_data.Labels,
+                max_labels=max_labels,
+            )
 
     # legend
     ax.legend(bbox_to_anchor=(1, 1), loc="upper left", fontsize=10)

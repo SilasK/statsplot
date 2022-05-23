@@ -1,3 +1,4 @@
+from curses import meta
 import imp
 import logging
 
@@ -5,7 +6,6 @@ from matplotlib.pyplot import violinplot
 
 logger = logging.getLogger("statstable")
 
-from anndata import AnnData
 from numpy import unique
 import pandas as pd
 import matplotlib.pylab as plt
@@ -17,7 +17,71 @@ from .plot import statsplot, vulcanoplot
 import seaborn as sns
 
 
-class StatsTable(AnnData):
+class MetaTable:
+    def __init__(self, data, obs=None, var=None) -> None:
+
+        if type(data) == MetaTable:
+            self.data = data.data
+            self.obs = data.obs
+            self.var = data.var
+            self.var_names = data.var_names
+            self.obs_names = data.obs_names
+            return
+
+        self.data = pd.DataFrame(data)
+
+        assert self.data.shape[0] > 0, "data is empty"
+        assert self.data.index.is_unique, "data has duplicate indices"
+        assert self.data.columns.is_unique, "data has duplicate columns"
+
+        if obs is None:
+            self.obs = pd.DataFrame(index=self.data.index)
+        else:
+            self.obs = pd.DataFrame(obs)
+            assert self.obs.index.is_unique, "obs has duplicate indices"
+
+            # calculate intersection of obs and data
+            intersection = self.obs.index.intersection(self.data.index)
+            self.data = self.data.loc[intersection].copy()
+            self.obs = self.obs.loc[intersection].copy()
+
+        if var is None:
+            self.var = pd.DataFrame(index=self.data.columns)
+        else:
+            self.var = pd.DataFrame(var)
+
+            assert self.var.index.is_unique, "var has duplicate indices"
+
+            intersection = self.var.index.intersection(self.data.columns)
+            self.data = self.data.loc[:, intersection].copy()
+            self.var = self.var.loc[intersection].copy()
+
+        self.var_names = self.data.columns
+        self.obs_names = self.data.index
+
+    def groupby(self, groupby, axis=0):
+        if axis == 0:
+            if type(groupby) == str:
+                assert groupby in self.obs.columns, "Groupby column not found in obs"
+                groupby = self.obs[groupby]
+
+            return self.data.groupby(groupby, axis=axis)
+
+        elif axis == 1:
+            if type(groupby) == str:
+                assert groupby in self.var.columns, "Groupby column not found in var"
+                groupby = self.var[groupby]
+
+            return self.data.groupby(groupby, axis=axis)
+
+    def __repr__(self):
+        value = f"MetaTable with {self.data.shape[0]} samples x {self.data.shape[1]} features\n"
+        f"Sample annotations: {list(self.obs.columns)}\n"
+        f"Feature annotations: {list(self.var.columns)} "
+        return value
+
+
+class StatsTable(MetaTable):
     def __init__(
         self,
         data,
@@ -34,8 +98,8 @@ class StatsTable(AnnData):
         label_variable=None,
     ):
 
-        # create AnnData object
-        super().__init__(data, obs=None, var=None)
+        # create MetaTable object
+        super().__init__(data)
 
         if type(test_variable) == str:
             self.test_variable = self.obs[test_variable]
@@ -86,16 +150,26 @@ class StatsTable(AnnData):
             self.labels = pd.Series(self.var_names, self.var_names)
 
         elif type(label_variable) == str:
-            self.labels = self.var[label_variable]
-        elif type(label_variable) == pd.Series:
 
-            self.var = self.var.join(label_variable)
+            self.labels = self.var[label_variable]
+
+        elif type(label_variable) == pd.Series:
+            if label_variable.name is None:
+                label_variable.name = "Label"
+            else:
+                assert (
+                    label_variable.name not in self.var.columns
+                ), "Label is already found in var"
+
+            self.var[label_variable.name] = label_variable
             self.labels = self.var[label_variable.name]
         else:
             raise IOError("label_variable must be None, a string, or a pandas series")
 
         if not self.labels.is_unique:
-            logger.error("Your labels are not unique. You are in for some trouble.")
+            logger.warn(
+                "Your labels are not unique. but I should be able to handle this."
+            )
 
     def __repr__(self) -> str:
         annadata_str = super().__repr__()
@@ -114,12 +188,12 @@ class StatsTable(AnnData):
 
         results = {}
 
-        for subset, subset_data in self.to_df().groupby(self.grouping_variable):
+        for subset, subset_data in self.groupby(self.grouping_variable):
             results[subset] = function(subset_data, **kws)
         return results
 
     def __calculate_stats__(
-        self, comparisons=None, ref_group=None, test="welch", test_kws=None
+        self, comparisons=None, ref_group=None, test="welch", **test_kws
     ):
 
         if ref_group is not None:
@@ -136,9 +210,6 @@ class StatsTable(AnnData):
 
         function = two_group_test
 
-        if test_kws is None:
-            test_kws = {}
-
         kws = dict(
             test_variable=self.test_variable,
             ref_group=ref_group,
@@ -148,7 +219,7 @@ class StatsTable(AnnData):
         )
 
         if self.grouping_variable is None:
-            results = function(self.to_df(), **kws)
+            results = function(self.data, **kws)
 
         else:
             results = self.__apply_to_subsets(function, **kws)
@@ -175,7 +246,7 @@ class StatsTable(AnnData):
             ax = plt.subplot(111)
 
         statsplot(
-            self[:, variable].to_df()[variable],
+            self.data[variable],
             self.test_variable,
             order_test=self.order_test,
             grouping_variable=self.grouping_variable,

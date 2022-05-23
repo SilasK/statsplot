@@ -8,12 +8,12 @@ except ImportError as e:
 
 from numpy import log
 import pandas as pd
-import anndata
+
 
 from typing import Union
 
 
-def clr(data: Union[pd.DataFrame, anndata.AnnData], log=log):
+def clr(data: pd.DataFrame, log=log):
     """
     Centered log ratio (CLR) with multiplicative replacement implemented in scikit-bio
     """
@@ -25,13 +25,8 @@ def clr(data: Union[pd.DataFrame, anndata.AnnData], log=log):
         d = data.loc[:, ~(data == 0).all()]
         # get data as matrix
         matrix = d.values
-    elif type(data) == anndata.AnnData:
-        # remove columns with all zeros
-        d = data[:, ~(data.X == 0).all(axis=0)].copy()
-        # get data as matrix
-        matrix = d.X
     else:
-        raise Exception("data must be a pandas.DataFrame or anndata.AnnData")
+        raise Exception("data must be a pandas.DataFrame")
 
     # Fill in zeros with multiplicative replacement
     matrix = composition.multiplicative_replacement(matrix)
@@ -44,7 +39,3 @@ def clr(data: Union[pd.DataFrame, anndata.AnnData], log=log):
     if type(data) == pd.DataFrame:
 
         return pd.DataFrame(matrix, index=d.index, columns=d.columns)
-
-    elif type(data) == anndata.AnnData:
-        d.X = matrix
-        return d
