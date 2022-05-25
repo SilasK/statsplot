@@ -27,6 +27,11 @@ Visit [Read the Docs](https://statsplot.readthedocs.org) for the full documentat
 
  -->
 
+ Setup :
+
+ ```
+ pip install statsplot
+ ```
 
  Setup dev version:
 
