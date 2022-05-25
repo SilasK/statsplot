@@ -6,7 +6,7 @@ from matplotlib.pyplot import violinplot
 
 logger = logging.getLogger("statstable")
 
-from numpy import unique
+from numpy import dtype, unique
 import pandas as pd
 import matplotlib.pylab as plt
 
@@ -40,7 +40,7 @@ class MetaTable:
         """Set shape and indexes """
         self.var_names = self.data.columns
         self.obs_names = self.data.index
-        self.shape = self.data.size
+        self.shape = self.data.shape
 
     def __init__(self, data, obs=None, var=None) -> None:
 
@@ -91,7 +91,7 @@ class MetaTable:
                 set_string_indexes(var)
 
                 if self.var.shape[0] != self.data.shape[0]:
-                    self.var = self.var.loc[self.data.index].copy()
+                    self.var = self.var.loc[self.data.columns].copy()
                 
             else:
                 raise AttributeError("`var` should be of type DataFrame or None")
@@ -129,15 +129,15 @@ class MetaTable:
         if axis == 0:
             G = self.obs.groupby(groupby,axis=0)
 
-            for group,indices in G.indices:
-                yield group, self.subset(index=indices)
+            for group in G.indices:
+                yield (group, self.subset(index= self.obs_names[G.indices[group]]))
             
 
         elif axis == 1:
             # Group by on axis 0. var indexes contain data.columns
             G = self.var.groupby(groupby,axis=0)
-            for group,indices in G.indices:
-                yield group, self.subset(columns=indices)
+            for group in G.indices:
+                yield group, self.subset(columns= self.var_names[G.indices[group]])
         else:
             raise Exception("axis should be 1 or 2")
 
