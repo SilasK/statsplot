@@ -16,66 +16,137 @@ from .plot import statsplot, vulcanoplot
 
 import seaborn as sns
 
+def is_anndata(instance):
+    """Function to check if an object is a anndata without importing the package"""
+
+    anndata_attr = ["obs","var","to_df","X"]
+    return all([ hasattr(instance, a) for a in anndata_attr])
+        
+def set_string_indexes(df):
+
+    df.index= df.index.astype(str)
+    df.columns= df.columns.astype(str)
+
 
 class MetaTable:
+    def __check_consistency(self):
+        
+        if self.data.shape[0] != self.obs.shape[0]:
+            raise Exception("data and obs are not alligned")
+        if self.data.shape[1] != self.var.shape[0]:
+            raise Exception("data and var are not alligned")
+
+    def __set_names_and_size(self):
+        """Set shape and indexes """
+        self.var_names = self.data.columns
+        self.obs_names = self.data.index
+        self.shape = self.data.size
+
     def __init__(self, data, obs=None, var=None) -> None:
 
         if type(data) == MetaTable:
             self.data = data.data
             self.obs = data.obs
             self.var = data.var
-            self.var_names = data.var_names
-            self.obs_names = data.obs_names
-            return
 
-        self.data = pd.DataFrame(data)
 
-        assert self.data.shape[0] > 0, "data is empty"
-        assert self.data.index.is_unique, "data has duplicate indices"
-        assert self.data.columns.is_unique, "data has duplicate columns"
+        elif is_anndata(data):
+            self.data = data.to_df()
+            self.obs = data.obs
+            self.var = data.var
 
-        if obs is None:
-            self.obs = pd.DataFrame(index=self.data.index)
+        elif type(data) == pd.DataFrame:
+            # parse data
+            assert data.shape[0] > 0, "data is empty"
+            assert data.index.is_unique, "data has duplicate indices"
+            assert data.columns.is_unique, "data has duplicate columns"
+
+            self.data = data
+            set_string_indexes(self.data)
+        
+            # parse obs
+
+            if obs is None:
+                self.obs = pd.DataFrame(index=self.data.index)
+            elif type(obs) == pd.DataFrame:
+
+                assert obs.index.is_unique, "obs has duplicate indices"
+                self.obs = obs
+                set_string_indexes(obs)
+
+                if self.obs.shape[0] != self.data.shape[0]:
+                    self.obs = self.obs.loc[self.data.index].copy()
+                
+            else:
+                raise AttributeError("`obs` should be of type DataFrame or None")
+
+            # parse var
+
+            if var is None:
+                self.var = pd.DataFrame(index=self.data.columns)
+            elif type(var) == pd.DataFrame:
+
+                assert var.index.is_unique, "var has duplicate indices"
+                self.var = var
+                set_string_indexes(var)
+
+                if self.var.shape[0] != self.data.shape[0]:
+                    self.var = self.var.loc[self.data.index].copy()
+                
+            else:
+                raise AttributeError("`var` should be of type DataFrame or None")
+
+            self.__check_consistency()
+
         else:
-            self.obs = pd.DataFrame(obs)
-            assert self.obs.index.is_unique, "obs has duplicate indices"
+            raise AttributeError("`data` needst to be one of [pandas.DataFrame,  ")
 
-            # calculate intersection of obs and data
-            intersection = self.obs.index.intersection(self.data.index)
-            self.data = self.data.loc[intersection].copy()
-            self.obs = self.obs.loc[intersection].copy()
+        # other attributes commmon to all
+        self.__set_names_and_size()
+        
+        # link functions from self data to self
+        functions_to_link= ["mean","median","sum","std"]
+        for f in functions_to_link:
+            setattr(self,f,getattr(self.data,f))
+        
+    def subset(self,index=None,columns=None):
+        assert not ((index is None) and (columns is None)),"either indexes or columns needs to be given"
+        
+        # fill indexes if None
+        if columns is None:
+            columns = self.var_names
+        elif index is None:
+            index = self.obs_names
 
-        if var is None:
-            self.var = pd.DataFrame(index=self.data.columns)
-        else:
-            self.var = pd.DataFrame(var)
+        
+        return MetaTable(data=self.data.loc[index,columns], 
+                         obs= self.obs.loc[index], 
+                         var = self.var.loc[columns]
+                         )
 
-            assert self.var.index.is_unique, "var has duplicate indices"
-
-            intersection = self.var.index.intersection(self.data.columns)
-            self.data = self.data.loc[:, intersection].copy()
-            self.var = self.var.loc[intersection].copy()
-
-        self.var_names = self.data.columns
-        self.obs_names = self.data.index
 
     def groupby(self, groupby, axis=0):
         if axis == 0:
-            if type(groupby) == str:
-                assert groupby in self.obs.columns, "Groupby column not found in obs"
-                groupby = self.obs[groupby]
+            G = self.obs.groupby(groupby,axis=0)
 
-            return self.data.groupby(groupby, axis=axis)
+            for group,indices in G.indices:
+                yield group, self.subset(index=indices)
+            
 
         elif axis == 1:
-            if type(groupby) == str:
-                assert groupby in self.var.columns, "Groupby column not found in var"
-                groupby = self.var[groupby]
+            # Group by on axis 0. var indexes contain data.columns
+            G = self.var.groupby(groupby,axis=0)
+            for group,indices in G.indices:
+                yield group, self.subset(columns=indices)
+        else:
+            raise Exception("axis should be 1 or 2")
 
-            return self.data.groupby(groupby, axis=axis)
+
+
+        
 
     def __repr__(self):
-        value = f"MetaTable with {self.data.shape[0]} samples x {self.data.shape[1]} features\n"
+        value = f"MetaTable with {self.shape[0]} samples x {self.shape[1]} features\n"
         f"Sample annotations: {list(self.obs.columns)}\n"
         f"Feature annotations: {list(self.var.columns)} "
         return value
@@ -188,8 +259,8 @@ class StatsTable(MetaTable):
 
         results = {}
 
-        for subset, subset_data in self.groupby(self.grouping_variable):
-            results[subset] = function(subset_data, **kws)
+        for subset, subset_metatable in self.groupby(self.grouping_variable):
+            results[subset] = function(subset_metatable.data, **kws)
         return results
 
     def __calculate_stats__(
