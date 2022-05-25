@@ -307,6 +307,7 @@ class StatsTable(MetaTable):
         distance_between_sig_labels="auto",
         box_params=None,
         swarm_params=None,
+        corrected_pvalues=False,
         ax=None,
         **labelkws,
     ):
@@ -315,6 +316,11 @@ class StatsTable(MetaTable):
 
         if ax is None:
             ax = plt.subplot(111)
+        
+        if corrected_pvalues:
+            p_value_name = "pBH"
+        else:
+            p_value_name = "Pvalue"
 
         statsplot(
             self.data[variable],
@@ -326,7 +332,7 @@ class StatsTable(MetaTable):
             swarm_params=swarm_params,
             labelkws=labelkws,
             palette=self.colors,
-            p_values=self.stats.Pvalue.loc[variable].T,
+            p_values=self.stats[p_value_name].loc[variable].T,
             ax=ax,
         )
 
