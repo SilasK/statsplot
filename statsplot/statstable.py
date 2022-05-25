@@ -16,28 +16,30 @@ from .plot import statsplot, vulcanoplot
 
 import seaborn as sns
 
+
 def is_anndata(instance):
     """Function to check if an object is a anndata without importing the package"""
 
-    anndata_attr = ["obs","var","to_df","X"]
-    return all([ hasattr(instance, a) for a in anndata_attr])
-        
+    anndata_attr = ["obs", "var", "to_df", "X"]
+    return all([hasattr(instance, a) for a in anndata_attr])
+
+
 def set_string_indexes(df):
 
-    df.index= df.index.astype(str)
-    df.columns= df.columns.astype(str)
+    df.index = df.index.astype(str)
+    df.columns = df.columns.astype(str)
 
 
 class MetaTable:
     def __check_consistency(self):
-        
+
         if self.data.shape[0] != self.obs.shape[0]:
             raise Exception("data and obs are not alligned")
         if self.data.shape[1] != self.var.shape[0]:
             raise Exception("data and var are not alligned")
 
     def __set_names_and_size(self):
-        """Set shape and indexes """
+        """Set shape and indexes"""
         self.var_names = self.data.columns
         self.obs_names = self.data.index
         self.shape = self.data.shape
@@ -48,7 +50,6 @@ class MetaTable:
             self.data = data.data
             self.obs = data.obs
             self.var = data.var
-
 
         elif is_anndata(data):
             self.data = data.to_df()
@@ -63,7 +64,7 @@ class MetaTable:
 
             self.data = data
             set_string_indexes(self.data)
-        
+
             # parse obs
 
             if obs is None:
@@ -76,7 +77,7 @@ class MetaTable:
 
                 if self.obs.shape[0] != self.data.shape[0]:
                     self.obs = self.obs.loc[self.data.index].copy()
-                
+
             else:
                 raise AttributeError("`obs` should be of type DataFrame or None")
 
@@ -92,7 +93,7 @@ class MetaTable:
 
                 if self.var.shape[0] != self.data.shape[0]:
                     self.var = self.var.loc[self.data.columns].copy()
-                
+
             else:
                 raise AttributeError("`var` should be of type DataFrame or None")
 
@@ -103,47 +104,43 @@ class MetaTable:
 
         # other attributes commmon to all
         self.__set_names_and_size()
-        
+
         # link functions from self data to self
-        functions_to_link= ["mean","median","sum","std"]
+        functions_to_link = ["mean", "median", "sum", "std"]
         for f in functions_to_link:
-            setattr(self,f,getattr(self.data,f))
-        
-    def subset(self,index=None,columns=None):
-        assert not ((index is None) and (columns is None)),"either indexes or columns needs to be given"
-        
+            setattr(self, f, getattr(self.data, f))
+
+    def subset(self, index=None, columns=None):
+        assert not (
+            (index is None) and (columns is None)
+        ), "either indexes or columns needs to be given"
+
         # fill indexes if None
         if columns is None:
             columns = self.var_names
         elif index is None:
             index = self.obs_names
 
-        
-        return MetaTable(data=self.data.loc[index,columns], 
-                         obs= self.obs.loc[index], 
-                         var = self.var.loc[columns]
-                         )
-
+        return MetaTable(
+            data=self.data.loc[index, columns],
+            obs=self.obs.loc[index],
+            var=self.var.loc[columns],
+        )
 
     def groupby(self, groupby, axis=0):
         if axis == 0:
-            G = self.obs.groupby(groupby,axis=0)
+            G = self.obs.groupby(groupby, axis=0)
 
             for group in G.indices:
-                yield (group, self.subset(index= self.obs_names[G.indices[group]]))
-            
+                yield (group, self.subset(index=self.obs_names[G.indices[group]]))
 
         elif axis == 1:
             # Group by on axis 0. var indexes contain data.columns
-            G = self.var.groupby(groupby,axis=0)
+            G = self.var.groupby(groupby, axis=0)
             for group in G.indices:
-                yield group, self.subset(columns= self.var_names[G.indices[group]])
+                yield group, self.subset(columns=self.var_names[G.indices[group]])
         else:
             raise Exception("axis should be 1 or 2")
-
-
-
-        
 
     def __repr__(self):
         value = f"MetaTable with {self.shape[0]} samples x {self.shape[1]} features\n"
@@ -316,7 +313,7 @@ class StatsTable(MetaTable):
 
         if ax is None:
             ax = plt.subplot(111)
-        
+
         if corrected_pvalues:
             p_value_name = "pBH"
         else:
