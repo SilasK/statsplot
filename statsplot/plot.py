@@ -108,7 +108,7 @@ def vulcanoplot(
     threshold_p=0.05,
     figsize=(6, 6),
     label_points="auto",
-    max_labels=15,
+    max_labels=5,
     **kws,
 ):
 

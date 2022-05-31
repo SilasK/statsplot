@@ -30,6 +30,8 @@ def set_string_indexes(df):
     df.columns = df.columns.astype(str)
 
 
+# TODO: groupby with function such as sum
+
 class MetaTable:
     def __check_consistency(self):
 
@@ -377,27 +379,38 @@ class StatsTable(MetaTable):
         self,
         comparisons=None,
         groups=None,
-        corrected_pvalues=True,
+        corrected_pvalues=False,
         threshold_p=None,
         hue=None,
+        figsize=(6, 6),
+        label_points="auto",
+        max_labels=5,
+        effect_label = None,
+        pvalue_label = None,
         **kws,
     ):
 
         if "log2FC" in self.stats.columns:
             effect_name = "log2FC"
-            y_label = "$\log_2FC$"
+            x_label = "$\log_2FC$"
 
         else:
             effect_name = "median_diff"
-            y_label = "median difference"
+            x_label = "median difference"
             logger.info("Don't have log2FC in stats, using median_diff for vulcanoplot")
+
+        if effect_label is not None:
+            x_label = effect_label
 
         def rename_vulcano_axis_labels():
             ax = plt.gca()
-            ax.set_xlabel(y_label)
+            ax.set_xlabel(x_label)
 
-            if corrected_pvalues:
+            if pvalue_label is not None:
+                ax.set_ylabel(pvalue_label)
+            elif corrected_pvalues:
                 ax.set_ylabel("$-\log(P_{BH})$")
+            # ellse default label from vulcano plot
 
         groups = self.__get_groups(groups)
 
@@ -421,6 +434,11 @@ class StatsTable(MetaTable):
         kws["threshold_p"] = threshold_p
         kws["hue"] = hue
         kws["labels"] = self.labels
+
+        # map kws to vulcanoplot
+        kws["label_points"] = label_points
+        kws["max_labels"] = max_labels
+        kws["figsize"] = figsize
 
         if groups is not None:
 
@@ -448,3 +466,5 @@ class StatsTable(MetaTable):
                 )
                 rename_vulcano_axis_labels()
                 axes.append(plt.gca())
+
+        return axes
