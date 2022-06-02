@@ -303,7 +303,7 @@ class StatsTable(MetaTable):
 
         description = self.var.copy()
 
-        if results.columns.levelshape[0] == 3:
+        if len(results.columns.levshape) == 3:
 
             description.columns = pd.MultiIndex.from_arrays(
                 [
@@ -312,7 +312,7 @@ class StatsTable(MetaTable):
                     description.columns,
                 ]
             )
-        elif results.columns.levelshape[0] == 2:
+        elif len(results.columns.levshape) == 2:
             description.columns = pd.MultiIndex.from_arrays(
                 [["Description"] * description.shape[1], description.columns]
             )
