@@ -4,7 +4,7 @@ A package that allows you easily to calculate and plot statistics.
 
  Seaborn                   |  Statsplot
 :-------------------------:|:-------------------------:
-![boxplot seaborn](../docs/images/nested_seaborn.png) |  ![boxplot statsplot](../docs/images/nested_statsplot.png)
+![boxplot seaborn](https://github.com/SilasK/statsplot/blob/master/docs/images/nested_seaborn.png) |  ![boxplot statsplot](https://github.com/SilasK/statsplot/blob/master/docs/images/nested_statsplot.png)
 
 
 
@@ -42,5 +42,5 @@ pip install --editable .
 
 ```
 
-See the [Example](../example.ipynb)
+See the [Example](https://github.com/SilasK/statsplot/blob/master/example.ipynb) or run it on [Colab](https://colab.research.google.com/github/SilasK/statsplot/blob/master/example.ipynb)
 
