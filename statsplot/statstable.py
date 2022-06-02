@@ -32,6 +32,7 @@ def set_string_indexes(df):
 
 # TODO: groupby with function such as sum
 
+
 class MetaTable:
     def __check_consistency(self):
 
@@ -210,10 +211,6 @@ class StatsTable(MetaTable):
         else:
             self.order_grouping, self.grouping_variable = None, None
 
-        self.__calculate_stats__(
-            test=test, test_kws=test_kws, comparisons=comparisons, ref_group=ref_group
-        )
-
         self.data_unit = data_unit
 
         if label_variable is None:
@@ -240,6 +237,10 @@ class StatsTable(MetaTable):
             logger.warn(
                 "Your labels are not unique. but I should be able to handle this."
             )
+
+        self.__calculate_stats__(
+            test=test, test_kws=test_kws, comparisons=comparisons, ref_group=ref_group
+        )
 
     def __repr__(self) -> str:
         annadata_str = super().__repr__()
@@ -298,7 +299,25 @@ class StatsTable(MetaTable):
             results.columns = results.columns.swaplevel(0, 1)
             results.sort_index(axis=1, inplace=True)
 
-        self.stats = results.astype(float)
+        ## Add description to stats
+
+        description = self.var.copy()
+
+        if results.columns.levelshape[0] == 3:
+
+            description.columns = pd.MultiIndex.from_arrays(
+                [
+                    ["Description"] * description.shape[1],
+                    ["All"] * description.shape[1],
+                    description.columns,
+                ]
+            )
+        elif results.columns.levelshape[0] == 2:
+            description.columns = pd.MultiIndex.from_arrays(
+                [["Description"] * description.shape[1], description.columns]
+            )
+
+        self.stats = results.astype(float).join(description)
 
     def plot(
         self,
@@ -347,11 +366,13 @@ class StatsTable(MetaTable):
             return None
         else:
 
-            all_groups = list(self.stats.columns.levels[-2])
+            all_groups = list(self.stats.Pvalue.columns.get_level_values(-2).unique())
             if subset is None:
 
                 return all_groups
             elif type(subset) == str:
+                assert subset in all_groups, f"{g} is not in the Groups"
+
                 return [subset]
             else:
                 for g in subset:
@@ -363,11 +384,12 @@ class StatsTable(MetaTable):
         "Check if given subset are in comparisons of statstable"
         "Otherwise return all in a row, if not defined return None"
 
-        all_comparisons = list(self.stats.columns.levels[-1])
+        all_comparisons = list(self.stats.Pvalue.columns.get_level_values(-1).unique())
         if subset is None:
 
             return all_comparisons
         elif type(subset) == str:
+            assert subset in all_comparisons, f"{g} is not in the Comparisons"
             return [subset]
         else:
             for g in subset:
@@ -385,8 +407,8 @@ class StatsTable(MetaTable):
         figsize=(6, 6),
         label_points="auto",
         max_labels=5,
-        effect_label = None,
-        pvalue_label = None,
+        effect_label=None,
+        pvalue_label=None,
         **kws,
     ):
 
