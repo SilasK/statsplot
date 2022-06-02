@@ -1,3 +1,5 @@
+[![Latest Version on PyPI](https://img.shields.io/pypi/v/statsplot.svg)](https://pypi.python.org/pypi/statsplot/)
+
 # Statsplot
 
 A package that allows you easily to calculate and plot statistics.
@@ -12,7 +14,7 @@ A package that allows you easily to calculate and plot statistics.
 
 > 
 <!-- 
-[![Latest Version on PyPI](https://img.shields.io/pypi/v/statsplot.svg)](https://pypi.python.org/pypi/statsplot/)
+
 [![Supported Implementations](https://img.shields.io/pypi/pyversions/statsplot.svg)](https://pypi.python.org/pypi/statsplot/)
 [![Build Status](https://secure.travis-ci.org/silask/statsplot.svg?branch=master)](http://travis-ci.org/christophevg/statsplot)
 [![Documentation Status](https://readthedocs.org/projects/statsplot/badge/?version=latest)](https://statsplot.readthedocs.io/en/latest/?badge=latest)
