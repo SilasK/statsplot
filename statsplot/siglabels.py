@@ -65,6 +65,9 @@ def __plot_sig_labels_hue(
     labelkws=None,
 ):
 
+    def calculate_hue_offset(group, order):
+        return (order.index(group) - len(order) * 0.5 + 0.5) / len(order) * width
+
     assert type(P_values) == pd.Series, "P values should be a series"
 
     if not show_ns:
@@ -78,17 +81,18 @@ def __plot_sig_labels_hue(
     # start with y0
     y = y0
 
+
     for idx, text in P_values.iteritems():
+        g1,g2 = idx.split("_vs_")
 
-        def calculate_hue_offset(group, order):
-            return (order.index(group) - len(order) * 0.5 + 0.5) / len(order) * width
+        if g1 in order and g2 in order:
 
-        x1 = calculate_hue_offset(idx.split("_vs_")[0], order) + x_offset
-        x2 = calculate_hue_offset(idx.split("_vs_")[1], order) + x_offset
+            x1 = calculate_hue_offset(g1, order) + x_offset
+            x2 = calculate_hue_offset(g2, order) + x_offset
 
-        __plot_sig_label(x1, x2, y, text, ax=ax, **labelkws)
+            __plot_sig_label(x1, x2, y, text, ax=ax, **labelkws)
 
-        y += deltay
+            y += deltay
 
 
 def ___plot_sig_labels_xaxis(
@@ -102,6 +106,10 @@ def ___plot_sig_labels_xaxis(
     use_stars=True,
     labelkws=None,
 ):
+
+
+    def calculate_x_offset(group, order):
+        return order.index(group)
 
     assert type(P_values) == pd.Series, "P values should be a series"
 
@@ -120,15 +128,16 @@ def ___plot_sig_labels_xaxis(
     y = y0
     for idx, text in P_values.iteritems():
 
-        def calculate_x_offset(group, order):
-            return order.index(group)
+        g1,g2 = idx.split("_vs_")
 
-        x1 = calculate_x_offset(idx.split("_vs_")[0], order)
-        x2 = calculate_x_offset(idx.split("_vs_")[1], order)
+        if g1 in order and g2 in order:
 
-        __plot_sig_label(x1, x2, y, text, ax=ax, **labelkws)
+            x1 = calculate_x_offset(g1, order)
+            x2 = calculate_x_offset(g2, order)
 
-        y += deltay
+            __plot_sig_label(x1, x2, y, text, ax=ax, **labelkws)
+
+            y += deltay
 
 
 def plot_all_sig_labels(
@@ -167,15 +176,16 @@ def plot_all_sig_labels(
 
         for cat, P in P_values.groupby(level=0):
 
-            x_offset = order_hue.index(cat)
+            if cat in order_hue:
+                x_offset = order_hue.index(cat)
 
-            __plot_sig_labels_hue(
-                P_values.loc[cat],
-                order,
-                ax=ax,
-                x_offset=x_offset,
-                deltay=deltay,
-                y0=y0,
-                show_ns=show_ns,
-                **kws
-            )
+                __plot_sig_labels_hue(
+                    P_values.loc[cat],
+                    order,
+                    ax=ax,
+                    x_offset=x_offset,
+                    deltay=deltay,
+                    y0=y0,
+                    show_ns=show_ns,
+                    **kws
+                )
