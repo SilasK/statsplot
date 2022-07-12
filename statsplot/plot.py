@@ -203,6 +203,7 @@ def statsplot(
     palette=None,
     p_values=None,
     test="ttest_ind",
+    show_not_significant=False,
     ax=None,
 ):
 
@@ -228,6 +229,11 @@ def statsplot(
         params.update(dict(x=test_variable, order=order_test))
     else:
 
+        if type(grouping_variable) == str:
+            assert data is not None, "If grouping_variable is a string, data must be provided"
+            grouping_variable = data[grouping_variable] 
+
+
         if order_grouping is None:
             order_grouping = unique(grouping_variable)
 
@@ -252,7 +258,7 @@ def statsplot(
     sns.swarmplot(**params, color="k", dodge=True, **swarm_params)
 
     if grouping_variable is not None:
-        ax.legend(*legend, bbox_to_anchor=(1, 1))
+        ax.legend(*legend, bbox_to_anchor=(1, 1), title=ax.legend_.get_title().get_text())
 
     # Statistics
     if p_values is None:
@@ -263,14 +269,20 @@ def statsplot(
         p_values = calculate_stats(
             variable,
             test_variable,
-            grouping_variable=grouping_variable,
+            grouping_variable = grouping_variable,
             test=test,
             **stats_kws,
         ).Pvalue.iloc[0]
 
+    
     if labelkws is None:
         labelkws = dict(deltay="auto")
+        if show_not_significant:
+            labelkws.update(use_stars=False)
 
-    plot_all_sig_labels(p_values, order_test, order_grouping, ax=ax, **labelkws)
+
+        
+
+    plot_all_sig_labels(p_values, order_test, order_grouping, show_ns=show_not_significant, ax=ax, **labelkws)
 
     return ax, p_values
