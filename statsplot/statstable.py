@@ -326,6 +326,7 @@ class StatsTable(MetaTable):
         box_params=None,
         swarm_params=None,
         corrected_pvalues=False,
+        show_not_significant=False,
         ax=None,
         **labelkws,
     ):
@@ -348,6 +349,7 @@ class StatsTable(MetaTable):
             order_grouping=self.order_grouping,
             box_params=box_params,
             swarm_params=swarm_params,
+            show_not_significant = show_not_significant,
             labelkws=labelkws,
             palette=self.colors,
             p_values=self.stats[p_value_name].loc[variable].T,

@@ -62,7 +62,7 @@ def __plot_sig_labels_hue(
     show_ns=True,
     width=0.8,
     use_stars=True,
-    labelkws=None,
+    **labelkws,
 ):
 
     assert type(P_values) == pd.Series, "P values should be a series"
@@ -72,8 +72,6 @@ def __plot_sig_labels_hue(
 
     P_values = P_values.apply(format_p_value, use_stars=use_stars)
 
-    if labelkws is None:
-        labelkws = {}
 
     # start with y0
     y = y0
@@ -100,7 +98,7 @@ def ___plot_sig_labels_xaxis(
     show_ns=True,
     width=0.8,
     use_stars=True,
-    labelkws=None,
+    **labelkws,
 ):
 
     assert type(P_values) == pd.Series, "P values should be a series"
@@ -114,8 +112,6 @@ def ___plot_sig_labels_xaxis(
 
     P_values = P_values.apply(format_p_value, use_stars=use_stars)
 
-    if labelkws is None:
-        labelkws = {}
 
     y = y0
     for idx, text in P_values.iteritems():
