@@ -256,13 +256,13 @@ def statsplot(
     sns.boxplot(palette=palette, **params, **box_params)
 
     if show_dots:
-    legend = ax.get_legend_handles_labels()
+        legend = ax.get_legend_handles_labels()
 
-    sns.swarmplot(**params, color="k", dodge=True, **swarm_params)
+        sns.swarmplot(**params, color="k", dodge=True, **swarm_params)
 
-        # add old variable, as dots have unified colors
-    if grouping_variable is not None:
-        ax.legend(*legend, bbox_to_anchor=(1, 1), title=ax.legend_.get_title().get_text())
+            # add old variable, as dots have unified colors
+        if grouping_variable is not None:
+            ax.legend(*legend, bbox_to_anchor=(1, 1), title=ax.legend_.get_title().get_text())
 
     # Statistics
     if p_values is None:
