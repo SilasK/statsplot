@@ -1,4 +1,5 @@
 from logging import getLogger
+from textwrap import dedent
 
 logger = getLogger("__name__")
 
@@ -207,7 +208,7 @@ def statsplot(
     show_not_significant=False,
     ax=None,
 ):
-
+    """Main function for plotting statistical tests."""
     if ax is None:
         ax = plt.subplot(111)
 
@@ -231,9 +232,10 @@ def statsplot(
     else:
 
         if type(grouping_variable) == str:
-            assert data is not None, "If grouping_variable is a string, data must be provided"
-            grouping_variable = data[grouping_variable] 
-
+            assert (
+                data is not None
+            ), "If grouping_variable is a string, data must be provided"
+            grouping_variable = data[grouping_variable]
 
         if order_grouping is None:
             order_grouping = unique(grouping_variable)
@@ -260,9 +262,11 @@ def statsplot(
 
         sns.swarmplot(**params, color="k", dodge=True, **swarm_params)
 
-            # add old variable, as dots have unified colors
+        # add old variable, as dots have unified colors
         if grouping_variable is not None:
-            ax.legend(*legend, bbox_to_anchor=(1, 1), title=ax.legend_.get_title().get_text())
+            ax.legend(
+                *legend, bbox_to_anchor=(1, 1), title=ax.legend_.get_title().get_text()
+            )
 
     # Statistics
     if p_values is None:
@@ -273,20 +277,94 @@ def statsplot(
         p_values = calculate_stats(
             variable,
             test_variable,
-            grouping_variable = grouping_variable,
+            grouping_variable=grouping_variable,
             test=test,
             **stats_kws,
         ).Pvalue.iloc[0]
 
-    
     if labelkws is None:
         labelkws = dict(deltay="auto")
         if show_not_significant:
             labelkws.update(use_stars=False)
 
-
-        
-
-    plot_all_sig_labels(p_values, order_test, order_grouping, show_ns=show_not_significant, ax=ax, **labelkws)
+    plot_all_sig_labels(
+        p_values,
+        order_test,
+        order_grouping,
+        show_ns=show_not_significant,
+        ax=ax,
+        **labelkws,
+    )
 
     return ax, p_values
+
+
+statsplot.__doc__ = dedent(
+    """\
+    Plot Boxplot with statistical significance.
+
+    Parameters  
+    ----------
+    variable : str or pandas.Series
+        The variable to be tested.
+    test_variable : str or pandas.Series
+        The variable to be tested against.
+    data : pandas.DataFrame
+        The dataframe containing the variable, test_variable and grouping_variable.
+    order_test : list           
+        The order of the test_variable.
+    grouping_variable : str or pandas.Series
+        The variable to be used for grouping.
+    order_grouping : list
+        The order of the grouping_variable.
+    show_dots : bool
+        If True, show dots on top of boxplot.
+    box_params : dict
+        Parameters for the boxplot.
+    swarm_params : dict
+        Parameters for the swarmplot.
+    labelkws : dict
+        Parameters for the labels.
+    stats_kws : dict
+        Parameters for the statistical test.
+    palette : list
+        The color palette.
+    p_values : pandas.Series
+        The p-values of the statistical test.
+    test : str
+        The statistical test.
+    show_not_significant : bool
+        If True, show not significant labels.
+    ax : matplotlib.axes.Axes
+        The axis to plot on.
+
+    Returns
+    -------
+    ax : matplotlib.axes.Axes
+        The axis with the plot.
+    p_values : pandas.Series
+        The p-values of the statistical test.
+
+    Examples
+    --------
+
+
+    .. plot::
+        :context: close-figs
+        :format: doctest
+        :include-source: True
+
+        >>> import seaborn as sns
+        >>> import statsplot as stp
+        >>> iris = sns.load_dataset("iris")
+        >>> ax,stats = stp.statsplot(data=iris, variable="sepal_length", test_variable="species")
+        >>> print(stats)
+        versicolor_vs_setosa       8.985235e-18
+        virginica_vs_setosa        6.892546e-28
+        virginica_vs_versicolor    1.724856e-07
+        Name: sepal_length, dtype: float64
+
+
+
+    """
+)

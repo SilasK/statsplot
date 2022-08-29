@@ -1,8 +1,4 @@
-from curses import meta
-import imp
 import logging
-
-from matplotlib.pyplot import violinplot
 
 logger = logging.getLogger("statstable")
 
@@ -322,7 +318,7 @@ class StatsTable(MetaTable):
     def plot(
         self,
         variable,
-        show_dots = True,
+        show_dots=True,
         distance_between_sig_labels="auto",
         box_params=None,
         swarm_params=None,
@@ -348,10 +344,10 @@ class StatsTable(MetaTable):
             order_test=self.order_test,
             grouping_variable=self.grouping_variable,
             order_grouping=self.order_grouping,
-            show_dots = show_dots,
+            show_dots=show_dots,
             box_params=box_params,
             swarm_params=swarm_params,
-            show_not_significant = show_not_significant,
+            show_not_significant=show_not_significant,
             labelkws=labelkws,
             palette=self.colors,
             p_values=self.stats[p_value_name].loc[variable].T,

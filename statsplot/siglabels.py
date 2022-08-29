@@ -72,7 +72,6 @@ def __plot_sig_labels_hue(
 
     P_values = P_values.apply(format_p_value, use_stars=use_stars)
 
-
     # start with y0
     y = y0
 
@@ -112,7 +111,6 @@ def ___plot_sig_labels_xaxis(
 
     P_values = P_values.apply(format_p_value, use_stars=use_stars)
 
-
     y = y0
     for idx, text in P_values.iteritems():
 
@@ -135,7 +133,7 @@ def plot_all_sig_labels(
     y0="auto",
     deltay="auto",
     ax=None,
-    **kws
+    **kws,
 ):
 
     """"""
@@ -173,5 +171,5 @@ def plot_all_sig_labels(
                 deltay=deltay,
                 y0=y0,
                 show_ns=show_ns,
-                **kws
+                **kws,
             )
