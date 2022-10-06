@@ -1,4 +1,3 @@
-from curses import meta
 import imp
 import logging
 
