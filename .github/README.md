@@ -44,5 +44,6 @@ pip install --editable .
 
 ```
 
+
 See the [Example](https://github.com/SilasK/statsplot/blob/master/example.ipynb) or run it on [Colab](https://colab.research.google.com/github/SilasK/statsplot/blob/master/example.ipynb)
 
