@@ -1,6 +1,7 @@
 import os
 import re
 import setuptools
+import versioneer
 
 NAME = "statsplot"
 AUTHOR = "Silas Kieser"
@@ -23,16 +24,14 @@ def read(file):
         return fh.read()
 
 
-VERSION = re.search(
-    r'__version__ = [\'"]([^\'"]*)[\'"]', read(NAME.replace("-", "_") + "/__init__.py")
-).group(1)
 
 LONG_DESCRIPTION = read(README)
 
 if __name__ == "__main__":
     setuptools.setup(
         name=NAME,
-        version=VERSION,
+        version=versioneer.get_version(),
+        cmdclass=versioneer.get_cmdclass(),
         packages=setuptools.find_packages(),
         author=AUTHOR,
         description=DESCRIPTION,
