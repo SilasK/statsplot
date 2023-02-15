@@ -11,7 +11,6 @@ A package that allows you easily to calculate and plot statistics.
 
 
 
-
 > 
 <!-- 
 
