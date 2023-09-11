@@ -189,6 +189,7 @@ def vulcanoplot(
         ax.annotate(g1, (ax_lim * 0.9, 0), ha="right")
         ax.annotate(g2, (-ax_lim * 0.9, 0), ha="left")
 
+# TODO: handle unaligned input.
 
 def statsplot(
     variable,
@@ -363,6 +364,7 @@ statsplot.__doc__ = dedent(
         virginica_vs_setosa        6.892546e-28
         virginica_vs_versicolor    1.724856e-07
         Name: sepal_length, dtype: float64
+        >>> plt.show()
 
 
 

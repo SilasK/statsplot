@@ -397,6 +397,8 @@ class StatsTable(MetaTable):
 
             return list(subset)
 
+
+# TODO: Hide output axes labesls
     def vulcanoplot(
         self,
         comparisons=None,
