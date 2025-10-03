@@ -128,14 +128,14 @@ class MetaTable:
 
     def groupby(self, groupby, axis=0):
         if axis == 0:
-            G = self.obs.groupby(groupby, axis=0)
+            G = self.obs.groupby(groupby)
 
             for group in G.indices:
                 yield (group, self.subset(index=self.obs_names[G.indices[group]]))
 
         elif axis == 1:
             # Group by on axis 0. var indexes contain data.columns
-            G = self.var.groupby(groupby, axis=0)
+            G = self.var.groupby(groupby)
             for group in G.indices:
                 yield group, self.subset(columns=self.var_names[G.indices[group]])
         else:
@@ -397,8 +397,7 @@ class StatsTable(MetaTable):
 
             return list(subset)
 
-
-# TODO: Hide output axes labesls
+    # TODO: Hide output axes labesls
     def vulcanoplot(
         self,
         comparisons=None,

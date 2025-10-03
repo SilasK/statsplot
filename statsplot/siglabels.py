@@ -75,7 +75,7 @@ def __plot_sig_labels_hue(
     # start with y0
     y = y0
 
-    for idx, text in P_values.iteritems():
+    for idx, text in P_values.items():
 
         def calculate_hue_offset(group, order):
             return (order.index(group) - len(order) * 0.5 + 0.5) / len(order) * width
@@ -112,7 +112,7 @@ def ___plot_sig_labels_xaxis(
     P_values = P_values.apply(format_p_value, use_stars=use_stars)
 
     y = y0
-    for idx, text in P_values.iteritems():
+    for idx, text in P_values.items():
 
         def calculate_x_offset(group, order):
             return order.index(group)
@@ -135,7 +135,6 @@ def plot_all_sig_labels(
     ax=None,
     **kws,
 ):
-
     """"""
 
     # define y0 and deltay

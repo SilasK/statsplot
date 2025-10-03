@@ -1,12 +1,9 @@
-
-
-
 from numpy import log
 import pandas as pd
 import numpy as np
 
 
-# copied from scikit-bio 
+# copied from scikit-bio
 # because I cannot install it
 def closure(mat):
     """
@@ -93,24 +90,25 @@ def multiplicative_replacement(mat, delta=None):
            [ 0.0625,  0.4375,  0.4375,  0.0625]])
     """
     mat = closure(mat)
-    z_mat = (mat == 0)
+    z_mat = mat == 0
 
     num_feats = mat.shape[-1]
     tot = z_mat.sum(axis=-1, keepdims=True)
 
     if delta is None:
-        delta = (1. / num_feats)**2
+        delta = (1.0 / num_feats) ** 2
 
     zcnts = 1 - tot * delta
     if np.any(zcnts) < 0:
-        raise ValueError('The multiplicative replacement created negative '
-                         'proportions. Consider using a smaller `delta`.')
+        raise ValueError(
+            "The multiplicative replacement created negative "
+            "proportions. Consider using a smaller `delta`."
+        )
     mat = np.where(z_mat, delta, zcnts * mat)
     return mat.squeeze()
 
 
-
-def clr(data: pd.DataFrame, log=log,features="all"):
+def clr(data: pd.DataFrame, log=log, features="all"):
     """
     Centered log ratio (CLR) with multiplicative replacement implemented in scikit-bio
     """
@@ -128,6 +126,8 @@ def clr(data: pd.DataFrame, log=log,features="all"):
     # Fill in zeros with multiplicative replacement
     matrix = multiplicative_replacement(matrix)
 
+    matrix = pd.DataFrame(matrix, index=d.index, columns=d.columns)
+
     # CLR
     matrix = log(matrix)
 
@@ -137,7 +137,7 @@ def clr(data: pd.DataFrame, log=log,features="all"):
         mean = matrix.mean(1)
 
     elif features.lower() == "nz":
-            
+
         mean = matrix[matrix != 0].mean(1)
     elif features.lower() == "iql":
         # use mean of features in interquartile range
@@ -147,9 +147,6 @@ def clr(data: pd.DataFrame, log=log,features="all"):
     else:
         raise Exception("features must be 'all', 'nz', or 'iql'")
 
-
     matrix = (matrix.T - mean).T
 
-    if type(data) == pd.DataFrame:
-
-        return pd.DataFrame(matrix, index=d.index, columns=d.columns)
+    return matrix

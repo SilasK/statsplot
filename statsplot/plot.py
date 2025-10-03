@@ -189,7 +189,9 @@ def vulcanoplot(
         ax.annotate(g1, (ax_lim * 0.9, 0), ha="right")
         ax.annotate(g2, (-ax_lim * 0.9, 0), ha="left")
 
+
 # TODO: handle unaligned input.
+
 
 def statsplot(
     variable,
@@ -261,7 +263,7 @@ def statsplot(
     if show_dots:
         legend = ax.get_legend_handles_labels()
 
-        sns.swarmplot(**params, color="k", dodge=True, **swarm_params)
+        sns.swarmplot(**params, palette="dark:k", dodge=True, **swarm_params)
 
         # add old variable, as dots have unified colors
         if grouping_variable is not None:

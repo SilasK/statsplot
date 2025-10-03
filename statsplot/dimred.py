@@ -133,13 +133,13 @@ class DimRed:
         self, data, method=PCA, transformation=None, n_components=None, **kargs
     ):
 
-        if n_components is None:
-            n_components = data.shape[0]
-
         if data.shape[0] > data.shape[1]:
-            print(
+            warnings.warn(
                 "you don't need to reduce dimensionality or your dataset is transposed."
             )
+
+        if n_components is None:
+            n_components = min(data.shape)
 
         self.decomposition = method(n_components=n_components, **kargs)
 
@@ -154,7 +154,7 @@ class DimRed:
 
         else:
 
-            self.data_ = data.applymap(transformation)
+            self.data_ = data.map(transformation)
 
         Xt = self.decomposition.fit_transform(self.data_)
 

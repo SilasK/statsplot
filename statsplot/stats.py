@@ -77,6 +77,7 @@ def __stats_test_all_on_once(values1, values2, test, **test_kws):
     res = test(values1, values2, **test_kws)
     ResultsDB["Statistic"] = res.statistic
     ResultsDB["Pvalue"] = res.pvalue
+
     return ResultsDB
 
 
@@ -109,9 +110,9 @@ def two_group_test(
     test_kws=None,
     correct_for_multiple_testing=True,
 ):
-
     """test: a parwise statistical test found in scipy e.g ['mannwhitneyu','ttest_ind']
-    or a function wich takes two argumens. Additional keyword arguments can be specified by test_kws"""
+    or a function wich takes two argumens. Additional keyword arguments can be specified by test_kws
+    """
 
     # Define test
     if test_kws is None:
@@ -189,6 +190,9 @@ def two_group_test(
         Pairwise_comp = Test(values1, values2)
 
         Pairwise_comp["median_diff"] = values2.median() - values1.median()
+        Pairwise_comp["mean_diff"] = values2.mean() - values1.mean()
+        Pairwise_comp["Median1"] = values1.median()
+        Pairwise_comp["Median2"] = values2.median()
 
         if min_value >= 0:
             Pairwise_comp["log2FC"] = np.log2(values2.mean() + log_delta) - np.log2(
@@ -230,7 +234,6 @@ def calculate_stats(
     test="ttest_ind",
     **test_kws,
 ):
-
     """Calculate pairewise statistical tests optioonally grouped by a grouping variable"""
 
     kws = dict(
