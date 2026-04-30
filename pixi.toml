@@ -1,0 +1,23 @@
+[workspace]
+name = "statsplot"
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "osx-64", "linux-64"]
+
+[dependencies]
+python = ">=3.11,<3.13"
+pip = ">=24"
+
+[pypi-dependencies]
+statsplot = { path = ".", editable = true }
+pytest = ">=8.3"
+pytest-mpl = ">=0.17"
+matplotlib = ">=3.9"
+seaborn = ">=0.13"
+pandas = ">=2.2"
+scipy = ">=1.13"
+scikit-learn = ">=1.5"
+
+[tasks]
+test = "pytest -q"
+test-mpl = "pytest -q -k mpl"
+test-all = "pytest -q"

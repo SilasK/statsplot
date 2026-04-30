@@ -213,7 +213,10 @@ def statsplot(
 ):
     """Main function for plotting statistical tests."""
 
-    default_box_params = {"fliersize": 0 if show_dots else None}
+    default_box_params = {}
+    if show_dots:
+        # Dot overlays already show sample-level values; hide boxplot outliers.
+        default_box_params.update(dict(showfliers=False, fliersize=0))
     default_swarm_params = {}
 
     if ax is None:
@@ -259,7 +262,9 @@ def statsplot(
 
         params.update(dict(x=grouping_variable, order=order_grouping))
 
-        default_swarm_params.update(dict(dodge=True, palette="dark:k",hue=test_variable, hue_order=order_test,legend=False))
+        default_swarm_params.update(
+            dict(dodge=True, palette="dark:k", hue=test_variable, hue_order=order_test)
+        )
 
     # apply new keyword params
     if box_params is None:
@@ -269,6 +274,14 @@ def statsplot(
     if swarm_params is None:
         swarm_params = {}
     swarm_params = {**default_swarm_params, **swarm_params}
+
+    # Ensure dodge-capable swarm defaults stay intact when users pass partial kwargs.
+    if show_dots and (grouping_variable is not None):
+        swarm_params.setdefault("dodge", True)
+        if swarm_params.get("dodge"):
+            swarm_params.setdefault("hue", test_variable)
+            swarm_params.setdefault("hue_order", order_test)
+            swarm_params.setdefault("palette", "dark:k")
 
     sns.boxplot(
         palette=palette,

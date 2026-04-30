@@ -11,6 +11,8 @@ docs/_build
 old
 *.ipynb_checkpoints
 
+test/_actual
+
 *__pycache__
 .vscode
 
