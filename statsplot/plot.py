@@ -212,6 +212,10 @@ def statsplot(
     ax=None,
 ):
     """Main function for plotting statistical tests."""
+
+    default_box_params = {"fliersize": 0 if show_dots else None}
+    default_swarm_params = {}
+
     if ax is None:
         ax = plt.subplot(111)
 
@@ -228,10 +232,15 @@ def statsplot(
 
     if order_test is None:
         order_test = unique(test_variable)
+    else:
+        assert set(order_test) == set(
+            test_variable
+        ), "test_variable has more values than order test. order_test cannot be used to subset the data. Do this prior."
 
     # use subgrouping
     if grouping_variable is None:
         params.update(dict(x=test_variable, order=order_test))
+        default_swarm_params.update(dict(color="k"))
     else:
 
         if type(grouping_variable) == str:
@@ -242,34 +251,37 @@ def statsplot(
 
         if order_grouping is None:
             order_grouping = unique(grouping_variable)
+        else:
 
-        params.update(
-            dict(
-                x=grouping_variable,
-                order=order_grouping,
-                hue=test_variable,
-                hue_order=order_test,
-            )
-        )
+            assert set(order_grouping) >= set(
+                grouping_variable
+            ), "grouping_variable has more values than order_grouping. order_grouping cannot be used to subset the data. Do this prior."
 
+        params.update(dict(x=grouping_variable, order=order_grouping))
+
+        default_swarm_params.update(dict(dodge=True, palette="dark:k",hue=test_variable, hue_order=order_test,legend=False))
+
+    # apply new keyword params
     if box_params is None:
         box_params = {}
+    box_params = {**default_box_params, **box_params}
 
     if swarm_params is None:
         swarm_params = {}
+    swarm_params = {**default_swarm_params, **swarm_params}
 
-    sns.boxplot(palette=palette, **params, **box_params)
+    sns.boxplot(
+        palette=palette,
+        legend=grouping_variable is not None,
+        hue_order=order_test,
+        hue=test_variable,
+        **params,
+        **box_params,
+    )
 
     if show_dots:
-        legend = ax.get_legend_handles_labels()
-
-        sns.swarmplot(**params, palette="dark:k", dodge=True, **swarm_params)
-
-        # add old variable, as dots have unified colors
-        if grouping_variable is not None:
-            ax.legend(
-                *legend, bbox_to_anchor=(1, 1), title=ax.legend_.get_title().get_text()
-            )
+        logger.debug(f"Showing dots with params: {dict(**params, **swarm_params)}")
+        sns.swarmplot(legend=False, **params, **swarm_params)
 
     # Statistics
     if p_values is None:
